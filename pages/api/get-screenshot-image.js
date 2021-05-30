@@ -1,9 +1,18 @@
 // We will first take a screenshot of the website
 // For this we will be using a headless browser like puppeteer
 // Puppeteer's main binary crashes weirdly on aws lambda so we use aws lambda instead
-const chromium = require('chrome-aws-lambda');
+import AWS from 'aws-sdk'
+
+const S3 = new AWS.S3({
+    credentials: {
+        accessKeyId: "....",
+        secretAccessKey: "...."
+    }
+})
+
 
 const getBrowserInstance = async () => {
+    const chromium = require('chrome-aws-lambda');
     const executablePath = await chromium.executablePath;
     if (!executablePath) {
         const puppeteer = require('puppeteer')
@@ -47,8 +56,36 @@ export default async (req, res) => {
     await page.goto(url);
 
     // If no path is specified, this gets saved by default in memory
-      const imageBuffer = await page.screenshot()
+    const imageBuffer = await page.screenshot()
       
+      const params = {
+          Bucket = 'MY_TEST_BUCKET',
+          Key: 'uploaded on' + Date.now() + 'jpg',
+          Body:imageBuffer
+      }
+      
+      S3.upload(params, (error, data) => {
+          if (error) {
+              return res.json({
+                  status: 'error',
+                  error:error.message || 'Something went wrong'
+              })
+          }
+          const fileName = 'uploaded on' + Date.now() + 'jpg'
+
+          const params = {
+              Bucket: "MY_TEST_BUCKET",
+              Key: fileName,
+              Expires: 60
+          }
+
+          const signedURL = S3.getSignedUrl('getObject', params)
+          
+            res.json({
+                status: 'ok',
+                data: signedURL
+            })
+      })
 
     // Upload this buffer on aws s3
   } catch (error) {
@@ -61,11 +98,5 @@ export default async (req, res) => {
   }
 
 //   return callback(null, result);
-
-  
-    res.json({
-        status: 'ok',
-        data : result
-    })
 
 };
