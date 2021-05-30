@@ -19,6 +19,10 @@ const getBrowserInstance = async () => {
         return puppeteer.launch({
             args: chromium.args,
             headless: true,
+            defaultViewport: {
+                width: 1280,
+                height: 720
+            },
             ignoreHTTPSErrors: true,
         })
     }
@@ -27,6 +31,10 @@ const getBrowserInstance = async () => {
         args: chromium.args,
         defaultViewport: chromium.defaultViewport,
         executablePath,
+        defaultViewport: {
+            width: 1280,
+            height: 720
+        },
         headless: chromium.headless,
         ignoreHTTPSErrors: true,
       });
@@ -71,6 +79,9 @@ export default async (req, res) => {
                   error:error.message || 'Something went wrong'
               })
           }
+
+
+          // For getting a signed url to uploaded s3 object (an image, in our case) that anyone can publicly access 
           const fileName = 'uploaded on' + Date.now() + 'jpg'
 
           const params = {
